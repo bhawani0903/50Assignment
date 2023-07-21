@@ -1,0 +1,82 @@
+=========================================================================================================================================
+Assignment-1: Replica Set
+=========================================================================================================================================
+-	Daemon set is used when the application is hardware/disk/node oriented.
+-	In this case, when a new worker node is added, the pod will be added to that new worker node, and when a (worker) node is deleted then the pod will be deleted from that (worker) node.
+-	Use case: Running system monitoring like disk/memory/CPU usage, collecting logs, etc.
+-	Command: kubectl apply -f <deamonset_yaml_filename> -n <name_space>
+
+=========================================================================================================================================
+Assignment-2: Deployment
+=========================================================================================================================================
+We use ‘rolling update’ with ‘minimum ready seconds’.
+1)	Apply patch to deployment by changing minReadySeconds to 10 sec (maybe some other value)
+Command: kubectl patch deployment <deployment_name> -p '{"spec": {"minReadySeconds": 10}}'
+
+2)	Change image
+Command: kubectl set image deployment <deployment_name> <container_name>=<new_container_image> -n <namespace>
+
+3)	Check status:
+Command: kubectl get all
+
+=========================================================================================================================================
+Assignment-3: Service
+=========================================================================================================================================
+Following steps can be taken:
+1. Check the service, type, cluster-ip and ports.
+   command: kubectl get svc
+   example: type is 'NodePort', cluster-ip is '10.98.25.244', port is '80:30123/TCP' (*THIS SHOULD BE 8000:30123/TCP)
+    kubia-nodeport   NodePort    10.98.25.244   <none>        80:30123/TCP   6s
+
+2. Check the status of replicas - DESIRED, CURRENT, and READY
+   command: kubectl get rs
+   example: kubia   3         3         3       30s
+
+3. Describe service and replica set - to check for any error message, endpoints, type, ports 
+   command: kubectl describe svc <svc_name>
+   example: Name:                     kubia-nodeport
+            Namespace:                default
+            Labels:                   <none>
+            Annotations:              Selector:  app=kubia
+            Type:                     NodePort
+            IP:                       10.101.130.64
+            Port:                     <unset>  80/TCP  (* THIS SHOULD BE 8000/TCP)
+            TargetPort:               8080/TCP
+            NodePort:                 <unset>  30123/TCP
+            Endpoints:                192.168.93.183:8080,192.168.93.184:8080,192.168.93.185:8080
+            Session Affinity:         None
+            External Traffic Policy:  Cluster
+            Events:                   <none>
+
+
+   command: kubectl describe rs <rs_name>
+   example: Name:         kubia
+            Namespace:    default
+            Selector:     app=kubia
+            Labels:       <none>
+            Annotations:  Replicas:  3 current / 3 desired
+            Pods Status:  3 Running / 0 Waiting / 0 Succeeded / 0 Failed
+            Pod Template:
+                Labels:  app=kubia
+                Containers:
+                   kubia:
+                      Image:        luksa/kubia
+                      Port:         <none>
+                      Host Port:    <none>
+                      Environment:  <none>
+                      Mounts:       <none>
+                Volumes:        <none>
+            Events:
+                Type    Reason            Age    From                   Message
+                ----    ------            ----   ----                   -------
+                Normal  SuccessfulCreate  3m31s  replicaset-controller  Created pod: kubia-ltm8s
+                Normal  SuccessfulCreate  3m31s  replicaset-controller  Created pod: kubia-wvrvj
+                Normal  SuccessfulCreate  3m31s  replicaset-controller  Created pod: kubia-czcf5
+
+4. Check the LABELs of the pod
+    command: kubectl get pods --show-labels
+    example: kubia-czcf5   1/1     Running   0          7m7s   app=kubia
+             kubia-ltm8s   1/1     Running   0          7m7s   app=kubia
+             kubia-wvrvj   1/1     Running   0          7m7s   app=kubia
+
+5. Check and make changes in the replica set and service nodeport yaml files. Apply after making change and check again.
